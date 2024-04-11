@@ -1,7 +1,11 @@
-import psycopg2   
-import psycopg2.extras  #for getting in dictionary
+#https://www.postgresql.org/docs/
+#we can use documentation for any package , like how it works , what are the modules , parameters etc  if anyone new can see above document.
+#make sure to install this postgresql in ur system and see properties to connect
 
-hostname = 'localhost'
+import psycopg2   
+import psycopg2.extras 
+
+hostname = 'localhost'  
 database = 'demo'
 username = 'postgres'
 pwd = '12345678'

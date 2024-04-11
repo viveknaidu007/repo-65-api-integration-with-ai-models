@@ -1,45 +1,62 @@
-from flask import Flask, request, jsonify
-from textblob import TextBlob
+import json
+from flask import Flask, render_template, request, jsonify
+from nltk.sentiment.vader import SentimentIntensityAnalyzer   #VADER (Valence Aware Dictionary and sEntiment Reasoner) for sentiment analysis
 import psycopg2
 
-# Initialize Flask app
+# initialize flask
 app = Flask(__name__)
 
-# Database connection parameters
-DB_HOST = 'localhost'
-DB_NAME = 'sentiment_db'
-DB_USER = 'postgres'
-DB_PASSWORD = 'password'
+# intialize SentimentIntensityAnalyzer
+sid = SentimentIntensityAnalyzer()
 
-# Function to perform sentiment analysis
+# functoin for calling 
 def analyze_sentiment(text):
-    analysis = TextBlob(text)
-    if analysis.sentiment.polarity > 0:
+    # using polarity_scores method to get the sentiment scores
+    scores = sid.polarity_scores(text)
+    if scores['compound'] > 0:
         return 'positive'
-    elif analysis.sentiment.polarity < 0:
+    elif scores['compound'] < 0:
         return 'negative'
     else:
         return 'neutral'
 
-# API endpoint for sentiment analysis
-@app.route('/', methods=['POST'])
+# now we are defining the API endpoint for sentiment analysis
+@app.route('/')
+def home():
+    return render_template('index.html')
+
+@app.route('/analyze_sentiment', methods=['POST'])
 def analyze_sentiment_api():
-    data = request.get_json()
-    text = data['text']
+    text = request.form['text']
     sentiment = analyze_sentiment(text)
+    save_to_database(text, sentiment)
+    return render_template('result.html', sentiment=sentiment) 
 
-    # Store data in PostgreSQL database
-    try:
-        conn = psycopg2.connect(host=DB_HOST, database=DB_NAME, user=DB_USER, password=DB_PASSWORD)
-        cursor = conn.cursor()
-        cursor.execute("INSERT INTO sentiments (text, sentiment) VALUES (%s, %s)", (text, sentiment))
-        conn.commit()
-        cursor.close()
-        conn.close()
-    except Exception as e:
-        return jsonify({'error': str(e)}), 500
+# now we are defining the  function to save data to PostgreSQL database
+def save_to_database(text, sentiment):
+    conn = psycopg2.connect(
+        dbname="sentiment",  #give ur databsename
+        user="postgres",     #give ur user
+        password="12345678", #give ur password which u gave while installing 
+        host="localhost",    #defaut it was 
+        port="5001"          #give ur port in ur sql only or it will show error
+    )
+    cur = conn.cursor()
+    cur.execute("INSERT INTO sentiment_data (text, sentiment) VALUES (%s, %s)", (text, sentiment))
 
-    return jsonify({'sentiment': sentiment})
+    #for seeing our data that stored in database we can do below
+    cur.execute("SELECT * FROM sentiment_data")
+
+    # for fetching all rows from the result set
+    rows = cur.fetchall()
+
+    # for printing the data in our terminal
+    for row in rows:
+        print(row)
+
+
+    conn.commit()
+    conn.close()
 
 if __name__ == '__main__':
     app.run(debug=True)

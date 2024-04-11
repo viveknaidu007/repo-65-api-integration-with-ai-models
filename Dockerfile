@@ -1,15 +1,20 @@
-#we are usinf pythonas base
-FROM python:3.9-slim
+#here it was using python image as base image
+FROM python
 
-#now we are settinf our workinf directory in the doctor where our real code exits
+# now we are setiing the working directory in the container
 WORKDIR /app
 
-COPY requirements.txt .
+# copying the current directory contents into the container at /app
+COPY . /app
 
-RUN pip install -r requirements.txt
+# now we can install dependenciess
+RUN apt-get update && apt-get install -y libpq-dev gcc
+RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .
+#port Flask will run on
+EXPOSE 5000
 
-CMD ["python" , "app.py"]
+# command for running the application
+CMD ["python", "app.py"]
 
 
